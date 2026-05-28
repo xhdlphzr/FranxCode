@@ -16,10 +16,12 @@
 //! Text editing operations backed by [`editor_core::PieceTable`].
 
 use editor_core::PieceTable;
+use serde::{Deserialize, Serialize};
+use std::collections::VecDeque;
 use thiserror::Error;
 
 /// Character range (start inclusive, end exclusive).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Range {
     pub start: usize,
     pub end: usize,
@@ -82,18 +84,18 @@ impl Range {
 }
 
 /// A stored undo/redo command containing the affected range and the changed text.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StoredCmd {
     pub range: Range,
     pub inserted: String,
     pub deleted: String,
 }
 
-/// Manages the undo/redo stacks.
+/// Manages the undo/redo stacks using a deque for efficient pop_front.
 #[derive(Debug, Clone, Default)]
 pub struct UndoStack {
-    undo: Vec<StoredCmd>,
-    redo: Vec<StoredCmd>,
+    undo: VecDeque<StoredCmd>,
+    redo: VecDeque<StoredCmd>,
     max: usize,
 }
 
@@ -101,8 +103,8 @@ impl UndoStack {
     /// Creates a new empty undo stack with a maximum of 1000 entries.
     pub fn new() -> Self {
         Self {
-            undo: vec![],
-            redo: vec![],
+            undo: VecDeque::new(),
+            redo: VecDeque::new(),
             max: 1000,
         }
     }
@@ -116,9 +118,9 @@ impl UndoStack {
     pub fn push(&mut self, range: Range, inserted: &str, deleted: &str) {
         self.redo.clear();
         if self.undo.len() >= self.max {
-            self.undo.remove(0);
+            self.undo.pop_front();
         }
-        self.undo.push(StoredCmd {
+        self.undo.push_back(StoredCmd {
             range,
             inserted: inserted.into(),
             deleted: deleted.into(),
@@ -130,7 +132,7 @@ impl UndoStack {
     /// # Returns
     /// `Some(StoredCmd)` if available, otherwise `None`.
     pub fn pop_undo(&mut self) -> Option<StoredCmd> {
-        self.undo.pop()
+        self.undo.pop_back()
     }
 
     /// Pushes a command onto the redo stack (used when undoing).
@@ -138,7 +140,7 @@ impl UndoStack {
     /// # Arguments
     /// * `c` - The command to store.
     pub fn push_redo(&mut self, c: StoredCmd) {
-        self.redo.push(c);
+        self.redo.push_back(c);
     }
 
     /// Pops the most recent command from the redo stack.
@@ -146,7 +148,7 @@ impl UndoStack {
     /// # Returns
     /// `Some(StoredCmd)` if available, otherwise `None`.
     pub fn pop_redo(&mut self) -> Option<StoredCmd> {
-        self.redo.pop()
+        self.redo.pop_back()
     }
 
     /// Returns `true` if there is an operation that can be undone.
@@ -161,7 +163,7 @@ impl UndoStack {
 }
 
 /// Errors that can occur when undoing or redoing.
-#[derive(Debug, Error, Clone, PartialEq, Eq)]
+#[derive(Debug, Error, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum UndoRedoError {
     /// No operation to undo.
     #[error("Nothing to undo")]
@@ -521,5 +523,40 @@ mod tests {
         assert_eq!(t.line_to_char(1), None);
         assert_eq!(t.char_to_line(0), Some(0));
         assert_eq!(t.char_to_line(1), None);
+    }
+
+    #[test]
+    fn test_replace() {
+        let mut t = TextEdit::from_str("hello world");
+        t.replace(&Range::new(6, 11), "Rust");
+        assert_eq!(t.full_text(), "hello Rust");
+    }
+
+    #[test]
+    fn test_get_text() {
+        let t = TextEdit::from_str("abcde");
+        assert_eq!(t.get_text(&Range::new(1, 4)), "bcd");
+    }
+
+    #[test]
+    fn test_char_at() {
+        let t = TextEdit::from_str("abc");
+        assert_eq!(t.char_at(1), Some('b'));
+        assert_eq!(t.char_at(3), None);
+    }
+
+    #[test]
+    fn test_delete_range() {
+        let mut t = TextEdit::from_str("hello world");
+        t.delete_range(5, 6);
+        assert_eq!(t.full_text(), "hello");
+    }
+
+    #[test]
+    fn test_replace_undo() {
+        let mut t = TextEdit::from_str("foo");
+        t.replace(&Range::new(0, 3), "bar");
+        assert!(t.undo().is_ok());
+        assert_eq!(t.full_text(), "foo");
     }
 }
