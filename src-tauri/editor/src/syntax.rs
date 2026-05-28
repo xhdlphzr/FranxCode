@@ -18,6 +18,7 @@
 //! Syntax highlighting is based on tree-sitter queries.
 
 use crate::edit::Range;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::rc::Rc;
 use tree_sitter::StreamingIterator;
@@ -26,7 +27,7 @@ use tree_sitter::{Language as TsLanguage, Node, Parser, Point, Query, QueryCurso
 // Language enum and language mappings
 
 /// Supported programming languages for parsing and syntax highlighting.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Language {
     Rust,
     C,
@@ -200,7 +201,7 @@ impl<'a> SyntaxNode<'a> {
 // Symbols
 
 /// A symbol (e.g. function, struct, variable) extracted from the AST.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Symbol {
     pub name: String,
     pub kind: SymbolKind,
@@ -210,7 +211,7 @@ pub struct Symbol {
 }
 
 /// Categorisation of a symbol.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum SymbolKind {
     Function,
     Struct,
@@ -255,7 +256,7 @@ impl SymbolKind {
 // Highlighting styles
 
 /// Style information for syntax highlighting.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct HighlightStyle {
     pub fg: Option<u32>,
     pub bold: bool,
@@ -318,6 +319,9 @@ impl Default for HighlightStyle {
 // Highlighter (multi‑language)
 
 /// Highlighter using tree-sitter queries, specialised per language.
+///
+/// **Note**: This type does **not** implement `Serialize`/`Deserialize` because it contains
+/// a tree-sitter query object and internal maps that are not meant to be serialized.
 #[derive(Debug, Clone)]
 pub struct Highlighter {
     query: Rc<Query>,
@@ -333,8 +337,6 @@ impl Highlighter {
     /// # Returns
     /// A `Highlighter` instance ready to highlight source code of that language.
     pub fn for_language(language: Language) -> Self {
-        // In a real implementation you would load the query from an external file.
-        // For simplicity we embed the query source directly (you can replace with `include_str!` later).
         let query_source = language.highlight_query();
         let lang = language.ts_language();
         let query =
@@ -415,6 +417,9 @@ impl Highlighter {
 /// A tree‑sitter syntax tree that owns the source text and the parsed tree.
 ///
 /// All `SyntaxNode` references produced from this object are tied to its lifetime.
+///
+/// **Note**: This type does **not** implement `Serialize`/`Deserialize` because it contains
+/// a live parser and tree that cannot be meaningfully serialized.
 pub struct SyntaxTree {
     #[allow(dead_code)]
     language: Language,
@@ -687,7 +692,7 @@ impl SyntaxTree {
         (self.line_starts.len().saturating_sub(1), 0)
     }
 
-    // Symbol collection helpers (unchanged)
+    // Symbol collection helpers
 
     fn collect_symbols(&self, node: &SyntaxNode, kind: SymbolKind, out: &mut Vec<Symbol>) {
         let nk = SymbolKind::from_node_kind(node.kind());
@@ -770,5 +775,39 @@ mod tests {
         let ranges = st.get_highlight_ranges(&Range::new(0, st.source().len()));
         assert!(!ranges.is_empty());
         assert!(ranges.iter().any(|(_, style)| style.fg.is_some()));
+    }
+
+    #[test]
+    fn test_parent_function() {
+        let st = mk("fn outer() { let x = 1; fn inner() {} }");
+        let pos = st.source().find("x").unwrap();
+        let parent = st.get_parent_function(pos);
+        assert!(parent.is_some());
+        assert_eq!(parent.unwrap().name, "outer");
+        let inner_pos = st.source().find("inner()").unwrap() + 6;
+        let inner_parent = st.get_parent_function(inner_pos);
+        assert!(inner_parent.is_some());
+        assert_eq!(inner_parent.unwrap().name, "inner");
+    }
+
+    #[test]
+    fn test_rename_symbol() {
+        let st = mk("fn old_name() {}");
+        let pos = st.source().find("old_name").unwrap();
+        let rename = st.rename_symbol(pos, "new_name");
+        assert!(rename.is_some());
+        let (range, new_text) = rename.unwrap();
+        assert_eq!(range.start, pos);
+        assert_eq!(range.end, pos + "old_name".len());
+        assert_eq!(new_text, "new_name");
+    }
+
+    #[test]
+    fn test_get_node_at_position() {
+        let st = mk("fn main() { 42 }");
+        let pos = st.source().find("42").unwrap();
+        let node = st.get_node_at_position(pos);
+        assert!(node.is_some());
+        assert_eq!(node.unwrap().kind(), "integer_literal");
     }
 }

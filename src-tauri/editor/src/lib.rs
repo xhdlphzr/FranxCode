@@ -31,7 +31,13 @@ pub use lsp::{offset_to_position, CompletionItem, HoverInfo, Location, LspClient
 pub use project::{FileNode, GitStatus, ProjectManager, StatusEntry};
 pub use syntax::{HighlightStyle, Symbol, SymbolKind, SyntaxNode, SyntaxTree};
 
-/// Main editor instance. Not `Send + Sync` — wrap in `Arc<RwLock<Editor>>` for multi-threaded use.
+/// Main editor instance.
+///
+/// **Note**: This type does **not** implement `Serialize`/`Deserialize` because it contains
+/// `LspClient` (process handle) and `SyntaxTree` (tree‑sitter internals) which are not serializable.
+/// For AI integration, use the provided methods directly; do not attempt to serialize the entire editor.
+///
+/// **Thread safety**: Not `Send + Sync`. Wrap in `Arc<RwLock<Editor>>` for multi-threaded use.
 pub struct Editor {
     pub state: TextEdit,
     pub cursors: Cursor,
@@ -100,7 +106,7 @@ impl Editor {
         Ok(())
     }
 
-    // Delegated text editing
+    // ----- Delegated text editing -----
 
     /// Inserts text at the current cursor position.
     ///
@@ -198,7 +204,7 @@ impl Editor {
         Ok(())
     }
 
-    // Delegated cursor
+    // ----- Delegated cursor -----
 
     /// Moves the primary cursor left.
     ///
@@ -305,7 +311,7 @@ impl Editor {
         self.cursors.split_selection_into_lines(&self.state);
     }
 
-    // Convenience
+    // ----- Convenience -----
 
     /// Returns the full document text.
     ///
@@ -339,7 +345,7 @@ impl Editor {
         self.cursors.position()
     }
 
-    // LSP proxying
+    // ----- LSP proxying -----
 
     /// Returns the `file://` URI of the currently open file, if any.
     fn document_uri(&self) -> Option<String> {
@@ -350,6 +356,9 @@ impl Editor {
     }
 
     /// Finds the definition at the current cursor position.
+    ///
+    /// # Returns
+    /// A vector of `Location`s, or an error if the LSP request fails.
     pub async fn goto_definition(&self) -> anyhow::Result<Vec<Location>> {
         if let (Some(lsp), Some(uri)) = (self.lsp.as_ref(), self.document_uri()) {
             lsp.goto_definition(self.cursor_position(), &self.full_text(), &uri)
@@ -360,6 +369,9 @@ impl Editor {
     }
 
     /// Finds all references at the current cursor position.
+    ///
+    /// # Returns
+    /// A vector of `Location`s, or an error if the LSP request fails.
     pub async fn find_references(&self) -> anyhow::Result<Vec<Location>> {
         if let (Some(lsp), Some(uri)) = (self.lsp.as_ref(), self.document_uri()) {
             lsp.find_references(self.cursor_position(), &self.full_text(), &uri)
@@ -370,6 +382,9 @@ impl Editor {
     }
 
     /// Gets completion items at the current cursor position.
+    ///
+    /// # Returns
+    /// A vector of `CompletionItem`s, or an error if the LSP request fails.
     pub async fn get_completions(&self) -> anyhow::Result<Vec<CompletionItem>> {
         if let (Some(lsp), Some(uri)) = (self.lsp.as_ref(), self.document_uri()) {
             lsp.get_completions(self.cursor_position(), &self.full_text(), &uri)
@@ -380,6 +395,9 @@ impl Editor {
     }
 
     /// Gets hover information at the current cursor position.
+    ///
+    /// # Returns
+    /// `Ok(Some(HoverInfo))` if a hover is available, `Ok(None)` otherwise.
     pub async fn get_hover(&self) -> anyhow::Result<Option<HoverInfo>> {
         if let (Some(lsp), Some(uri)) = (self.lsp.as_ref(), self.document_uri()) {
             lsp.get_hover(self.cursor_position(), &self.full_text(), &uri)
@@ -390,6 +408,12 @@ impl Editor {
     }
 
     /// Formats the given character range using the LSP server.
+    ///
+    /// # Arguments
+    /// * `range` - The character range to format.
+    ///
+    /// # Returns
+    /// A vector of `(Range, new_text)` pairs, or an error if the LSP request fails.
     pub async fn format_range(&self, range: &Range) -> anyhow::Result<Vec<(Range, String)>> {
         if let (Some(lsp), Some(uri)) = (self.lsp.as_ref(), self.document_uri()) {
             lsp.format_range(range, &self.full_text(), &uri).await
@@ -399,6 +423,12 @@ impl Editor {
     }
 
     /// Gets quick fixes for a given character range.
+    ///
+    /// # Arguments
+    /// * `range` - The character range.
+    ///
+    /// # Returns
+    /// A vector of `(Range, new_text)` pairs, or an error if the LSP request fails.
     pub async fn quick_fix(&self, range: &Range) -> anyhow::Result<Vec<(Range, String)>> {
         if let (Some(lsp), Some(uri)) = (self.lsp.as_ref(), self.document_uri()) {
             lsp.quick_fix(range, &self.full_text(), &uri).await
@@ -458,5 +488,33 @@ mod tests {
             err.downcast_ref::<UndoRedoError>(),
             Some(&UndoRedoError::NothingToUndo)
         );
+    }
+
+    #[test]
+    fn test_move_cursor() {
+        let mut e = Editor::with_content("hello world");
+        e.move_right(false);
+        assert_eq!(e.cursor_position(), 1);
+        e.move_left(true);
+        assert_eq!(e.cursor_position(), 0);
+        assert_eq!(e.cursors.primary().range(), Range::new(0, 1));
+        e.select_all();
+        assert_eq!(e.cursors.primary().range(), Range::new(0, 11));
+        e.move_to_line_start(false);
+        assert_eq!(e.cursor_position(), 0);
+        e.move_to_line_end(false);
+        assert_eq!(e.cursor_position(), 11);
+    }
+
+    #[test]
+    fn test_selection_ops() {
+        let mut e = Editor::with_content("line1\nline2\nline3");
+        e.select_line();
+        let line_range = e.cursors.primary().range();
+        assert!(line_range.len() >= 5);
+        e.add_cursor_below();
+        assert_eq!(e.cursors.selections().len(), 2);
+        e.split_selection_into_lines();
+        assert_eq!(e.cursors.selections().len(), 3);
     }
 }

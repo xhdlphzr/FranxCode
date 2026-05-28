@@ -16,10 +16,11 @@
 //! Project management: file trees, opening/saving files, and Git integration.
 
 use crate::edit::{Range, TextEdit};
+use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 
 /// A node in the file tree (file or directory).
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FileNode {
     pub name: String,
     pub path: PathBuf,
@@ -91,7 +92,7 @@ impl FileNode {
 }
 
 /// A Git status entry for a single file.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StatusEntry {
     pub path: String,
     pub status: String,
@@ -99,7 +100,7 @@ pub struct StatusEntry {
 }
 
 /// Git status for a repository.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GitStatus {
     pub branch: String,
     pub entries: Vec<StatusEntry>,
@@ -107,7 +108,7 @@ pub struct GitStatus {
 }
 
 /// Manages project state: current file, dirty flag, file operations, Git commands.
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ProjectManager {
     pub current_file: Option<PathBuf>,
     pub is_dirty: bool,
@@ -443,6 +444,9 @@ impl Default for ProjectManager {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::fs::{self, File};
+    use std::io::Write;
+    use tempfile::tempdir;
 
     #[test]
     fn test_fn() {
@@ -454,5 +458,119 @@ mod tests {
     fn test_pm() {
         let pm = ProjectManager::new();
         assert!(pm.current_file.is_none());
+    }
+
+    #[test]
+    fn test_open_save_file() -> anyhow::Result<()> {
+        let dir = tempdir()?;
+        let file_path = dir.path().join("test.txt");
+        let mut pm = ProjectManager::new();
+
+        assert!(pm.open_file(&file_path).is_err());
+
+        let original_content = "Hello, world!";
+        let mut f = File::create(&file_path)?;
+        f.write_all(original_content.as_bytes())?;
+        f.sync_all()?;
+
+        let text_edit = pm.open_file(&file_path)?;
+        assert_eq!(text_edit.full_text(), original_content);
+        assert_eq!(pm.current_file, Some(file_path.clone()));
+        assert!(!pm.is_dirty);
+
+        let new_content = "New content";
+        let mut text_edit = text_edit;
+        text_edit.replace(&Range::new(0, text_edit.len()), new_content);
+        pm.mark_dirty();
+        pm.save_file(&text_edit)?;
+        assert!(!pm.is_dirty);
+        let saved = fs::read_to_string(&file_path)?;
+        assert_eq!(saved, new_content);
+
+        let new_path = dir.path().join("new.txt");
+        pm.save_file_as(&text_edit, &new_path)?;
+        assert_eq!(pm.current_file, Some(new_path.clone()));
+        let saved_as = fs::read_to_string(&new_path)?;
+        assert_eq!(saved_as, new_content);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_get_project_tree() -> anyhow::Result<()> {
+        let dir = tempdir()?;
+        let root = dir.path();
+        fs::create_dir(root.join("subdir"))?;
+        File::create(root.join("file1.txt"))?;
+        File::create(root.join("subdir/file2.rs"))?;
+
+        let pm = ProjectManager::new();
+        let nodes = pm.get_project_tree(root)?;
+        assert_eq!(nodes.len(), 2);
+        let subdir = nodes.iter().find(|n| n.name == "subdir").unwrap();
+        assert!(subdir.is_dir);
+        assert_eq!(subdir.children.len(), 1);
+        assert_eq!(subdir.children[0].name, "file2.rs");
+        assert!(!subdir.children[0].is_dir);
+        Ok(())
+    }
+
+    #[test]
+    fn test_git_integration() -> anyhow::Result<()> {
+        let dir = tempdir()?;
+        let repo_path = dir.path();
+        let repo = git2::Repository::init(repo_path)?;
+        let file_path = repo_path.join("test.txt");
+        let mut f = File::create(&file_path)?;
+        f.write_all(b"initial")?;
+        f.sync_all()?;
+        let mut index = repo.index()?;
+        index.add_path(Path::new("test.txt"))?;
+        index.write()?;
+        let tree_id = index.write_tree()?;
+        let tree = repo.find_tree(tree_id)?;
+        let sig = git2::Signature::now("test", "test@test.com")?;
+        repo.commit(Some("HEAD"), &sig, &sig, "first", &tree, &[])?;
+
+        let pm = ProjectManager::new();
+        let status = pm.git_status(repo_path)?;
+        assert!(status.is_clean);
+
+        fs::write(&file_path, "modified")?;
+        let status2 = pm.git_status(repo_path)?;
+        assert!(!status2.is_clean);
+        assert!(status2
+            .entries
+            .iter()
+            .any(|e| e.path == "test.txt" && e.status == "modified"));
+
+        pm.git_commit(repo_path, "second commit", &[Path::new("test.txt")])?;
+        let status3 = pm.git_status(repo_path)?;
+        assert!(status3.is_clean);
+
+        fs::write(&file_path, "another change")?;
+        let diff = pm.git_diff(repo_path, Path::new("test.txt"))?;
+        assert!(!diff.is_empty());
+        let diff_all = pm.git_diff_all(repo_path)?;
+        assert!(!diff_all.is_empty());
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_git_repo_detection() -> anyhow::Result<()> {
+        let dir = tempdir()?;
+        let root = dir.path();
+        let sub = root.join("sub");
+        fs::create_dir(&sub)?;
+        assert!(!ProjectManager::is_git_repo(root));
+        git2::Repository::init(root)?;
+        assert!(ProjectManager::is_git_repo(root));
+        assert!(ProjectManager::is_git_repo(&sub));
+        assert_eq!(
+            ProjectManager::find_git_root(&sub),
+            Some(root.to_path_buf())
+        );
+        Ok(())
     }
 }

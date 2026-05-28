@@ -17,10 +17,11 @@
 //! Word boundaries via [`unicode_segmentation`] scanning only the current line for performance.
 
 use crate::edit::{Range, TextEdit};
+use serde::{Deserialize, Serialize};
 use unicode_segmentation::UnicodeSegmentation;
 
 /// Movement direction for cursor actions.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Movement {
     Up,
     Down,
@@ -35,14 +36,14 @@ pub enum Movement {
 }
 
 /// The mode of the cursor (not currently used, reserved for future expansion).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum CursorMode {
     Insert,
     Select,
 }
 
 /// A single selection (or cursor) defined by anchor and active positions.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Selection {
     pub anchor: usize,
     pub active: usize,
@@ -125,7 +126,7 @@ impl Selection {
 }
 
 /// Manages multiple selections and the primary cursor.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Cursor {
     selections: Vec<Selection>,
     primary_index: usize,
@@ -619,6 +620,7 @@ mod tests {
         assert!(s.is_collapsed());
         assert_eq!(s.cursor(), 5);
     }
+
     #[test]
     fn test_move_lr() {
         let tx = t("hello");
@@ -628,6 +630,7 @@ mod tests {
         c.move_right(&tx, false);
         assert_eq!(c.position(), 2);
     }
+
     #[test]
     fn test_move_ud() {
         let tx = t("a\nb\nc");
@@ -637,6 +640,7 @@ mod tests {
         c.move_down(&tx, false);
         assert_eq!(c.position(), 2);
     }
+
     #[test]
     fn test_select_all() {
         let tx = t("abc");
@@ -644,6 +648,7 @@ mod tests {
         c.select_all(tx.len());
         assert!(c.has_selection());
     }
+
     #[test]
     fn test_extend() {
         let tx = t("ab");
@@ -651,6 +656,7 @@ mod tests {
         c.extend_selection_right(&tx);
         assert_eq!(c.primary().range(), Range::new(0, 1));
     }
+
     #[test]
     fn test_multi_cursor() {
         let tx = t("a\nb\nc");
@@ -667,5 +673,39 @@ mod tests {
         assert_eq!(c.position(), 5);
         c.move_word_right(&tx, false);
         assert_eq!(c.position(), 6);
+    }
+
+    #[test]
+    fn test_set_selections() {
+        let mut c = Cursor::new();
+        c.set_selections(vec![Range::new(0, 5), Range::new(6, 11)]);
+        assert_eq!(c.selections.len(), 2);
+        assert_eq!(c.selections[0].range(), Range::new(0, 5));
+        assert_eq!(c.selections[1].range(), Range::new(6, 11));
+        assert_eq!(c.primary().cursor(), 5);
+    }
+
+    #[test]
+    fn test_select_line() {
+        let tx = t("line1\nline2\nline3");
+        let mut c = Cursor::at(8);
+        c.select_line(&tx);
+        assert_eq!(c.selections.len(), 1);
+        assert_eq!(c.primary().range(), Range::new(6, 12));
+        let tx2 = t("a\nb\nc");
+        let mut c2 = Cursor::at(2);
+        c2.select_line(&tx2);
+        assert_eq!(c2.primary().range(), Range::new(2, 4));
+    }
+
+    #[test]
+    fn test_split_selection_into_lines() {
+        let tx = t("line1\nline2\nline3\nline4");
+        let mut c = Cursor::new();
+        c.set_selections(vec![Range::new(6, 12)]);
+        c.split_selection_into_lines(&tx);
+        assert_eq!(c.selections.len(), 2);
+        assert_eq!(c.selections[0].cursor(), 6);
+        assert_eq!(c.selections[1].cursor(), 12);
     }
 }
