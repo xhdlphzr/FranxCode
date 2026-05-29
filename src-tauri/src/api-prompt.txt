@@ -1,0 +1,545 @@
+// Copyright (C) 2026 xhdlphzr
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
+SIG: pub fn caret(o : usize)-> Self
+DOC:  Creates a collapsed selection (caret) at the given offset.   # Arguments  * `o` - Character offset of the caret.   # Returns  A new `Selection` with both anchor and active set to `o`.
+
+SIG: pub fn new(a : usize , b : usize)-> Self
+DOC:  Creates a selection from two offsets.   # Arguments  * `a` - First offset (anchor).  * `b` - Second offset (active).   # Returns  A new `Selection` with the given anchor and active.
+
+SIG: pub fn range(& self)-> Range
+DOC:  Returns the normalized range of this selection (start <= end).   # Returns  A `Range` where start is less than or equal to end.
+
+SIG: pub fn is_collapsed(& self)-> bool
+DOC:  Returns `true` if the selection is collapsed (anchor == active).   # Returns  `true` if the selection has zero length, `false` otherwise.
+
+SIG: pub fn cursor(& self)-> usize
+DOC:  Returns the active offset (the cursor position).   # Returns  The active offset as a character index.
+
+SIG: pub fn start(& self)-> usize
+DOC:  Returns the start offset of the normalized range.   # Returns  The smaller of anchor and active.
+
+SIG: pub fn end(& self)-> usize
+DOC:  Returns the end offset of the normalized range.   # Returns  The larger of anchor and active.
+
+SIG: pub fn new()-> Self
+DOC:  Creates a new `Cursor` with a single caret at offset 0.   # Returns  A new `Cursor` instance.
+
+SIG: pub fn at(o : usize)-> Self
+DOC:  Creates a new `Cursor` with a single caret at the given offset.   # Arguments  * `o` - Character offset of the caret.   # Returns  A new `Cursor` instance.
+
+SIG: pub fn selections(& self)-> & [Selection]
+DOC:  Returns the list of all selections.   # Returns  A slice of all selections.
+
+SIG: pub fn primary(& self)-> & Selection
+DOC:  Returns the primary selection.   # Returns  A reference to the primary selection.
+
+SIG: pub fn primary_mut(& mut self)-> & mut Selection
+DOC:  Returns a mutable reference to the primary selection.   # Returns  A mutable reference to the primary selection.
+
+SIG: pub fn set_selections(& mut self , ranges : Vec < Range >)
+DOC:  Replaces all selections with new ranges.   # Arguments  * `ranges` - Vector of character ranges that become selections.
+
+SIG: pub fn position(& self)-> usize
+DOC:  Returns the character offset of the primary cursor.   # Returns  The primary cursor position as a character offset.
+
+SIG: pub fn has_selection(& self)-> bool
+DOC:  Returns `true` if any selection is non‑collapsed.   # Returns  `true` if there is at least one selection with length > 0, `false` otherwise.
+
+SIG: pub fn select_all(& mut self , doc_len : usize)
+DOC:  Selects the entire document.   # Arguments  * `doc_len` - The total length of the document in characters.
+
+SIG: pub fn select_line(& mut self , text : & TextEdit)
+DOC:  Selects the line containing the primary cursor.   # Arguments  * `text` - The text buffer providing line mapping.
+
+SIG: pub fn move_cursor(& mut self , m : Movement , text : & TextEdit , extend : bool)
+DOC:  Moves the primary cursor according to a movement command.   # Arguments  * `m` - The movement direction.  * `text` - The text buffer for layout calculations.  * `extend` - If `true`, extends the current selection; otherwise replaces it.
+
+SIG: pub fn move_up(& mut self , t : & TextEdit , e : bool)
+DOC:  Moves the primary cursor up.   # Arguments  * `t` - The text buffer.  * `e` - Extend selection if `true`.
+
+SIG: pub fn move_down(& mut self , t : & TextEdit , e : bool)
+DOC:  Moves the primary cursor down.   # Arguments  * `t` - The text buffer.  * `e` - Extend selection if `true`.
+
+SIG: pub fn move_left(& mut self , t : & TextEdit , e : bool)
+DOC:  Moves the primary cursor left.   # Arguments  * `t` - The text buffer.  * `e` - Extend selection if `true`.
+
+SIG: pub fn move_right(& mut self , t : & TextEdit , e : bool)
+DOC:  Moves the primary cursor right.   # Arguments  * `t` - The text buffer.  * `e` - Extend selection if `true`.
+
+SIG: pub fn move_word_left(& mut self , t : & TextEdit , e : bool)
+DOC:  Moves the primary cursor one word left.   # Arguments  * `t` - The text buffer.  * `e` - Extend selection if `true`.
+
+SIG: pub fn move_word_right(& mut self , t : & TextEdit , e : bool)
+DOC:  Moves the primary cursor one word right.   # Arguments  * `t` - The text buffer.  * `e` - Extend selection if `true`.
+
+SIG: pub fn move_to_line_start(& mut self , t : & TextEdit , e : bool)
+DOC:  Moves the primary cursor to the start of the current line.   # Arguments  * `t` - The text buffer.  * `e` - Extend selection if `true`.
+
+SIG: pub fn move_to_line_end(& mut self , t : & TextEdit , e : bool)
+DOC:  Moves the primary cursor to the end of the current line.   # Arguments  * `t` - The text buffer.  * `e` - Extend selection if `true`.
+
+SIG: pub fn move_to_file_start(& mut self , t : & TextEdit , e : bool)
+DOC:  Moves the primary cursor to the start of the file.   # Arguments  * `t` - The text buffer.  * `e` - Extend selection if `true`.
+
+SIG: pub fn move_to_file_end(& mut self , t : & TextEdit , e : bool)
+DOC:  Moves the primary cursor to the end of the file.   # Arguments  * `t` - The text buffer.  * `e` - Extend selection if `true`.
+
+SIG: pub fn extend_selection_up(& mut self , t : & TextEdit)
+DOC:  Extends the primary selection upward.   # Arguments  * `t` - The text buffer.
+
+SIG: pub fn extend_selection_down(& mut self , t : & TextEdit)
+DOC:  Extends the primary selection downward.   # Arguments  * `t` - The text buffer.
+
+SIG: pub fn extend_selection_left(& mut self , t : & TextEdit)
+DOC:  Extends the primary selection to the left.   # Arguments  * `t` - The text buffer.
+
+SIG: pub fn extend_selection_right(& mut self , t : & TextEdit)
+DOC:  Extends the primary selection to the right.   # Arguments  * `t` - The text buffer.
+
+SIG: pub fn add_cursor_above(& mut self , t : & TextEdit)
+DOC:  Adds a new cursor above the primary cursor.   # Arguments  * `t` - The text buffer for vertical positioning.
+
+SIG: pub fn add_cursor_below(& mut self , t : & TextEdit)
+DOC:  Adds a new cursor below the primary cursor.   # Arguments  * `t` - The text buffer for vertical positioning.
+
+SIG: pub fn split_selection_into_lines(& mut self , t : & TextEdit)
+DOC:  Splits **all** selections into per‑line carets, preserving each selection's preferred x‑offset.   # Arguments  * `t` - The text buffer for line layout.
+
+SIG: pub fn edit_ranges(& self)-> Vec < Range >
+DOC:  Returns a list of normalized ranges for editing, sorted from largest start to smallest.   # Returns  A vector of `Range` suitable for applying edits in reverse order.
+
+SIG: pub fn new(start : usize , end : usize)-> Self
+DOC:  Creates a new range with the given start and end positions.   # Arguments  * `start` - Start offset (inclusive).  * `end` - End offset (exclusive).   # Panics  Panics if `start > end` in debug builds.
+
+SIG: pub fn collapsed(offset : usize)-> Self
+DOC:  Creates a collapsed range (zero length) at the given offset.   # Arguments  * `offset` - The character offset.   # Returns  A `Range` with `start == end == offset`.
+
+SIG: pub fn len(& self)-> usize
+DOC:  Returns the length of the range (number of characters).   # Returns  `end - start`, or 0 if `end < start`.
+
+SIG: pub fn is_collapsed(& self)-> bool
+DOC:  Returns `true` if the range has zero length.   # Returns  `true` when `start == end`.
+
+SIG: pub fn contains(& self , offset : usize)-> bool
+DOC:  Checks whether a character offset lies inside the range.   # Arguments  * `offset` - The character offset to test.   # Returns  `true` if `start <= offset < end`.
+
+SIG: pub fn new()-> Self
+DOC:  Creates a new empty undo stack with a maximum of 1000 entries.
+
+SIG: pub fn push(& mut self , range : Range , inserted : & str , deleted : & str)
+DOC:  Pushes a new command onto the undo stack and clears the redo stack.   # Arguments  * `range` - The affected character range.  * `inserted` - The text that was inserted.  * `deleted` - The text that was deleted.
+
+SIG: pub fn pop_undo(& mut self)-> Option < StoredCmd >
+DOC:  Pops the most recent command from the undo stack.   # Returns  `Some(StoredCmd)` if available, otherwise `None`.
+
+SIG: pub fn push_redo(& mut self , c : StoredCmd)
+DOC:  Pushes a command onto the redo stack (used when undoing).   # Arguments  * `c` - The command to store.
+
+SIG: pub fn pop_redo(& mut self)-> Option < StoredCmd >
+DOC:  Pops the most recent command from the redo stack.   # Returns  `Some(StoredCmd)` if available, otherwise `None`.
+
+SIG: pub fn can_undo(& self)-> bool
+DOC:  Returns `true` if there is an operation that can be undone.
+
+SIG: pub fn can_redo(& self)-> bool
+DOC:  Returns `true` if there is an operation that can be redone.
+
+SIG: pub fn new()-> Self
+DOC:  Creates an empty `TextEdit`.
+
+SIG: pub fn from_str(text : & str)-> Self
+DOC:  Creates a `TextEdit` from an initial string.   # Arguments  * `text` - The initial content.
+
+SIG: pub fn len(& self)-> usize
+DOC:  Returns the number of characters in the buffer.
+
+SIG: pub fn is_empty(& self)-> bool
+DOC:  Returns `true` if the buffer is empty.
+
+SIG: pub fn full_text(& self)-> String
+DOC:  Returns the whole text as a `String`.
+
+SIG: pub fn insert(& mut self , offset : usize , text : & str)
+DOC:  Inserts text at the given character offset.   # Arguments  * `offset` - Character index where to insert (clamped to buffer length).  * `text` - The text to insert.
+
+SIG: pub fn delete_range(& mut self , start : usize , length : usize)
+DOC:  Deletes a range of text specified by start and length.   # Arguments  * `start` - Start character offset (inclusive).  * `length` - Number of characters to delete.
+
+SIG: pub fn delete(& mut self , range : & Range)
+DOC:  Deletes the text in the given range.   # Arguments  * `range` - The character range to delete.
+
+SIG: pub fn replace(& mut self , range : & Range , new_text : & str)
+DOC:  Replaces the text in the given range with new text.   # Arguments  * `range` - The character range to replace.  * `new_text` - The replacement text.
+
+SIG: pub fn get_text(& self , range : & Range)-> String
+DOC:  Retrieves the text from the given range.   # Arguments  * `range` - The character range to extract.   # Returns  The substring as a `String`.
+
+SIG: pub fn char_at(& self , offset : usize)-> Option < char >
+DOC:  Returns the character at the given offset, if any.   # Arguments  * `offset` - Character offset.   # Returns  `Some(char)` if the offset is valid, otherwise `None`.
+
+SIG: pub fn line_count(& self)-> usize
+DOC:  Returns the number of lines in the buffer.   # Returns  The line count (always ≥ 1).
+
+SIG: pub fn line_to_char(& self , line : usize)-> Option < usize >
+DOC:  Finds the character offset of the start of a given line.   # Arguments  * `line` - Line index (0‑based).   # Returns  `Some(offset)` if the line exists, otherwise `None`.
+
+SIG: pub fn char_to_line(& self , offset : usize)-> Option < usize >
+DOC:  Finds the line number that contains the given character offset.   # Arguments  * `offset` - Character offset.   # Returns  `Some(line)` (0‑based) if the offset is within the document, otherwise `None`.   # Behavior  * If the document is empty, returns `Some(0)` for `offset == 0`.  * If `offset` points exactly to the start of a newline character, it belongs to the line **before** the newline.  * If `offset` equals the document length, returns `None` (except empty document).
+
+SIG: pub fn undo(& mut self)-> Result < () , UndoRedoError >
+DOC:  Undoes the last edit operation.   # Returns  `Ok(())` on success, or `Err(UndoRedoError::NothingToUndo)` if there is nothing to undo.
+
+SIG: pub fn redo(& mut self)-> Result < () , UndoRedoError >
+DOC:  Redoes the last undone edit operation.   # Returns  `Ok(())` on success, or `Err(UndoRedoError::NothingToRedo)` if there is nothing to redo.
+
+SIG: pub fn can_undo(& self)-> bool
+DOC:  Returns `true` if an undo operation is possible.
+
+SIG: pub fn can_redo(& self)-> bool
+DOC:  Returns `true` if a redo operation is possible.
+
+SIG: pub fn new(seq : u64)-> Self
+DOC:  Creates a new version with the given sequence number.   # Arguments  * `seq` - The sequence number (monotonically increasing).   # Returns  A `Version` with unique id, current UTC timestamp, and the given sequence.
+
+SIG: pub fn from_parts(et : EditType , range : Range , inserted : & str , deleted : & str , before : Version , after : Version ,)-> Self
+DOC:  Creates a new `EditRecord` from its components.   # Arguments  * `et` - The type of edit.  * `range` - The character range affected.  * `inserted` - The inserted text (if any).  * `deleted` - The deleted text (if any).  * `before` - The version before the edit.  * `after` - The version after the edit.   # Returns  A new `EditRecord` with a unique id and current timestamp.
+
+SIG: pub fn new()-> Self
+DOC:  Creates a new timeline with default settings (max 10000 records, snapshot every 100 edits).
+
+SIG: pub fn with_config(max_records : usize , snapshot_interval : usize)-> Self
+DOC:  Creates a new timeline with custom capacity and snapshot interval.   # Arguments  * `max_records` - Maximum number of edit records to keep.  * `snapshot_interval` - How many edits between automatic snapshots.
+
+SIG: pub fn record_edit(& mut self , et : EditType , range : Range , inserted : & str , deleted : & str , current_text : & str ,)
+DOC:  Records an edit operation.   # Arguments  * `et` - The edit type.  * `range` - The affected character range.  * `inserted` - Inserted text (may be empty).  * `deleted` - Deleted text (may be empty).  * `current_text` - The full text after the edit (for snapshotting).
+
+SIG: pub fn get_history(& self , from : DateTime < Utc > , to : DateTime < Utc >)-> Vec < & EditRecord >
+DOC:  Returns all edit records whose timestamps lie in the given interval.   # Arguments  * `from` - Start timestamp (inclusive).  * `to` - End timestamp (inclusive).   # Returns  A vector of references to matching `EditRecord`s.
+
+SIG: pub fn recent_records(& self , n : usize)-> Vec < & EditRecord >
+DOC:  Returns the most recent `n` edit records.   # Arguments  * `n` - Number of records to return.   # Returns  A vector of references to the most recent records (most recent first).
+
+SIG: pub fn all_records(& self)-> Vec < & EditRecord >
+DOC:  Returns all edit records in chronological order.   # Returns  A vector of references to all records.
+
+SIG: pub fn get_snapshot_at(& self , ts : DateTime < Utc >)-> Option < (Version , String) >
+DOC:  Finds the latest snapshot taken at or before the given timestamp.   # Arguments  * `ts` - The timestamp.   # Returns  An optional tuple of version and decompressed text.
+
+SIG: pub fn get_current_version(& self)-> & Version
+DOC:  Returns the current version.
+
+SIG: pub fn record_count(& self)-> usize
+DOC:  Returns the number of stored edit records.
+
+SIG: pub fn clear(& mut self)
+DOC:  Clears all history and snapshots, resetting to version 0.
+
+SIG: pub fn take_snapshot(& mut self , text : & str)
+DOC:  Takes a full‑text snapshot of the current state (compressed).   # Arguments  * `text` - The full document text to store.
+
+SIG: pub fn goto_version(& mut self , version_id : & str , text : & mut TextEdit)-> anyhow :: Result < bool >
+DOC:  Restores the editor to a specific version by its ID.   # Arguments  * `version_id` - The version identifier string.  * `text` - The mutable `TextEdit` to modify.   # Returns  `Ok(true)` if the version was found and restored, `Ok(false)` otherwise.
+
+SIG: pub fn goto_time(& mut self , ts : DateTime < Utc > , text : & mut TextEdit)-> anyhow :: Result < bool >
+DOC:  Restores the editor to the state at a given timestamp.   # Arguments  * `ts` - The target timestamp.  * `text` - The mutable `TextEdit` to modify.   # Returns  `Ok(true)` if the time was reached, `Ok(false)` otherwise.
+
+SIG: pub fn goto_sequence(& mut self , target_seq : u64 , text : & mut TextEdit)-> anyhow :: Result < bool >
+DOC:  Internal method: restores to a specific sequence number.   # Arguments  * `target_seq` - The target sequence number.  * `text` - The mutable `TextEdit` to modify.   # Returns  `Ok(true)` if the sequence was found and restored, `Ok(false)` otherwise.
+
+SIG: pub fn new()-> Self
+DOC:  Creates a new empty editor.   # Returns  A new `Editor` instance.
+
+SIG: pub fn with_content(content : & str)-> Self
+DOC:  Creates an editor with initial content.   # Arguments  * `content` - The initial text content.   # Returns  A new `Editor` instance containing `content`.
+
+SIG: pub fn enable_syntax(& mut self , language : syntax :: Language)-> anyhow :: Result < () >
+DOC:  Enables syntax highlighting for a given language.   # Arguments  * `language` - The programming language to parse.   # Returns  `Ok(())` on success, or an error if the language parser cannot be loaded.
+
+SIG: pub fn enable_lsp(& mut self , config : LspConfig)-> anyhow :: Result < () >
+DOC:  Enables LSP client with the given configuration.   # Arguments  * `config` - The LSP server configuration.   # Returns  `Ok(())` on success, or an error if the server process cannot be started.
+
+SIG: pub fn insert(& mut self , text : & str)
+DOC:  Inserts text at the current cursor position.   # Arguments  * `text` - The string to insert.
+
+SIG: pub fn delete(& mut self)
+DOC:  Deletes the currently selected text (or character under cursor if no selection).
+
+SIG: pub fn replace(& mut self , new_text : & str)
+DOC:  Replaces the current selection(s) with new text.   # Arguments  * `new_text` - The text to replace the selection with.
+
+SIG: pub fn undo(& mut self)-> anyhow :: Result < () >
+DOC:  Undoes the last editing operation.   # Returns  `Ok(())` on success, or an error if there is nothing to undo.
+
+SIG: pub fn redo(& mut self)-> anyhow :: Result < () >
+DOC:  Redoes the last undone editing operation.   # Returns  `Ok(())` on success, or an error if there is nothing to redo.
+
+SIG: pub fn move_left(& mut self , extend : bool)
+DOC:  Moves the primary cursor left.   # Arguments  * `extend` - If `true`, extends the selection; otherwise collapses.
+
+SIG: pub fn move_right(& mut self , extend : bool)
+DOC:  Moves the primary cursor right.   # Arguments  * `extend` - If `true`, extends the selection; otherwise collapses.
+
+SIG: pub fn move_up(& mut self , extend : bool)
+DOC:  Moves the primary cursor up.   # Arguments  * `extend` - If `true`, extends the selection; otherwise collapses.
+
+SIG: pub fn move_down(& mut self , extend : bool)
+DOC:  Moves the primary cursor down.   # Arguments  * `extend` - If `true`, extends the selection; otherwise collapses.
+
+SIG: pub fn move_word_left(& mut self , extend : bool)
+DOC:  Moves the primary cursor one word left.   # Arguments  * `extend` - If `true`, extends the selection; otherwise collapses.
+
+SIG: pub fn move_word_right(& mut self , extend : bool)
+DOC:  Moves the primary cursor one word right.   # Arguments  * `extend` - If `true`, extends the selection; otherwise collapses.
+
+SIG: pub fn move_to_line_start(& mut self , extend : bool)
+DOC:  Moves the primary cursor to the start of the current line.   # Arguments  * `extend` - If `true`, extends the selection; otherwise collapses.
+
+SIG: pub fn move_to_line_end(& mut self , extend : bool)
+DOC:  Moves the primary cursor to the end of the current line.   # Arguments  * `extend` - If `true`, extends the selection; otherwise collapses.
+
+SIG: pub fn move_to_file_start(& mut self , extend : bool)
+DOC:  Moves the primary cursor to the start of the file.   # Arguments  * `extend` - If `true`, extends the selection; otherwise collapses.
+
+SIG: pub fn move_to_file_end(& mut self , extend : bool)
+DOC:  Moves the primary cursor to the end of the file.   # Arguments  * `extend` - If `true`, extends the selection; otherwise collapses.
+
+SIG: pub fn select_all(& mut self)
+DOC:  Selects the entire document.
+
+SIG: pub fn select_line(& mut self)
+DOC:  Selects the line containing the primary cursor.
+
+SIG: pub fn add_cursor_above(& mut self)
+DOC:  Adds a new cursor above the primary cursor.
+
+SIG: pub fn add_cursor_below(& mut self)
+DOC:  Adds a new cursor below the primary cursor.
+
+SIG: pub fn split_selection_into_lines(& mut self)
+DOC:  Splits the current selection into per‑line carets.
+
+SIG: pub fn full_text(& self)-> String
+DOC:  Returns the full document text.   # Returns  A `String` containing the entire document.
+
+SIG: pub fn len(& self)-> usize
+DOC:  Returns the length of the document in characters.   # Returns  The number of characters.
+
+SIG: pub fn is_empty(& self)-> bool
+DOC:  Returns `true` if the document is empty.   # Returns  `true` if `len() == 0`, otherwise `false`.
+
+SIG: pub fn cursor_position(& self)-> usize
+DOC:  Returns the current primary cursor position.   # Returns  The character offset of the active cursor.
+
+SIG: pub fn goto_definition(& self)-> anyhow :: Result < Vec < Location > >
+DOC:  Finds the definition at the current cursor position.   # Returns  A vector of `Location`s, or an error if the LSP request fails.
+
+SIG: pub fn find_references(& self)-> anyhow :: Result < Vec < Location > >
+DOC:  Finds all references at the current cursor position.   # Returns  A vector of `Location`s, or an error if the LSP request fails.
+
+SIG: pub fn get_completions(& self)-> anyhow :: Result < Vec < CompletionItem > >
+DOC:  Gets completion items at the current cursor position.   # Returns  A vector of `CompletionItem`s, or an error if the LSP request fails.
+
+SIG: pub fn get_hover(& self)-> anyhow :: Result < Option < HoverInfo > >
+DOC:  Gets hover information at the current cursor position.   # Returns  `Ok(Some(HoverInfo))` if a hover is available, `Ok(None)` otherwise.
+
+SIG: pub fn format_range(& self , range : & Range)-> anyhow :: Result < Vec < (Range , String) > >
+DOC:  Formats the given character range using the LSP server.   # Arguments  * `range` - The character range to format.   # Returns  A vector of `(Range, new_text)` pairs, or an error if the LSP request fails.
+
+SIG: pub fn quick_fix(& self , range : & Range)-> anyhow :: Result < Vec < (Range , String) > >
+DOC:  Gets quick fixes for a given character range.   # Arguments  * `range` - The character range.   # Returns  A vector of `(Range, new_text)` pairs, or an error if the LSP request fails.
+
+SIG: pub fn offset_to_position(text : & str , char_offset : usize)-> (usize , usize)
+DOC:  Converts a 0‑based character offset to an LSP position (line, UTF‑16 column).   # Arguments  * `text` - The full document text.  * `char_offset` - The character offset (Unicode scalar count).   # Returns  A tuple `(line, utf16_column)`.
+
+SIG: pub fn position_to_offset(text : & str , line : usize , utf16_col : usize)-> usize
+DOC:  Converts an LSP position (line, UTF‑16 column) to a character offset.   # Arguments  * `text` - The full document text.  * `line` - The 0‑based line number.  * `utf16_col` - The UTF‑16 column offset on that line.   # Returns  The character offset (Unicode scalar count).
+
+SIG: pub fn rust_analyzer(root : & str)-> Self
+DOC:  Creates a configuration for rust-analyzer.   # Arguments  * `root` - The root directory path (will be converted to file URI).   # Returns  A preconfigured `LspConfig` for Rust.
+
+SIG: pub fn start(config : LspConfig)-> anyhow :: Result < Self >
+DOC:  Starts the LSP server process and performs initialisation.   # Arguments  * `config` - The server configuration.   # Returns  A new `LspClient` on success, or an error if the server cannot be launched.
+
+SIG: pub fn goto_definition(& self , char_offset : usize , full_text : & str , uri : & str ,)-> anyhow :: Result < Vec < Location > >
+DOC:  Finds the definition at the given character offset.   # Arguments  * `char_offset` - Character offset in the document.  * `full_text` - The full document text.  * `uri` - The document URI.   # Returns  A vector of `Location`s, or an error if the request fails.
+
+SIG: pub fn find_references(& self , char_offset : usize , full_text : & str , uri : & str ,)-> anyhow :: Result < Vec < Location > >
+DOC:  Finds all references at the given character offset.   # Arguments  * `char_offset` - Character offset in the document.  * `full_text` - The full document text.  * `uri` - The document URI.   # Returns  A vector of `Location`s, or an error if the request fails.
+
+SIG: pub fn get_completions(& self , char_offset : usize , full_text : & str , uri : & str ,)-> anyhow :: Result < Vec < CompletionItem > >
+DOC:  Gets completion items at the given character offset.   # Arguments  * `char_offset` - Character offset in the document.  * `full_text` - The full document text.  * `uri` - The document URI.   # Returns  A vector of `CompletionItem`s, or an error if the request fails.
+
+SIG: pub fn get_hover(& self , char_offset : usize , full_text : & str , uri : & str ,)-> anyhow :: Result < Option < HoverInfo > >
+DOC:  Gets hover information at the given character offset.   # Arguments  * `char_offset` - Character offset in the document.  * `full_text` - The full document text.  * `uri` - The document URI.   # Returns  `Ok(Some(HoverInfo))` if hover is available, `Ok(None)` otherwise.
+
+SIG: pub fn format_range(& self , range : & Range , full_text : & str , uri : & str ,)-> anyhow :: Result < Vec < (Range , String) > >
+DOC:  Formats a character range using the LSP server.   # Arguments  * `range` - The character range to format.  * `full_text` - The full document text.  * `uri` - The document URI.   # Returns  A vector of `(Range, new_text)` pairs, or an error if the request fails.
+
+SIG: pub fn quick_fix(& self , range : & Range , full_text : & str , uri : & str ,)-> anyhow :: Result < Vec < (Range , String) > >
+DOC:  Gets quick fixes for a range.   # Arguments  * `range` - The character range.  * `full_text` - The full document text.  * `uri` - The document URI.   # Returns  A vector of `(Range, new_text)` pairs, or an error if the request fails.
+
+SIG: pub fn shutdown(& self)-> anyhow :: Result < () >
+DOC:  Shuts down the LSP server.   # Returns  `Ok(())` on success, or an error if the shutdown request fails.
+
+SIG: pub fn dir(name : & str , path : PathBuf)-> Self
+DOC:  Creates a directory node.   # Arguments  * `name` - The directory name.  * `path` - The full filesystem path.   # Returns  A `FileNode` representing a directory.
+
+SIG: pub fn file(name : & str , path : PathBuf)-> Self
+DOC:  Creates a file node.   # Arguments  * `name` - The file name.  * `path` - The full filesystem path.   # Returns  A `FileNode` representing a file.
+
+SIG: pub fn add_child(& mut self , c : FileNode)
+DOC:  Adds a child node.   # Arguments  * `c` - The child node to add.
+
+SIG: pub fn sort_children(& mut self)
+DOC:  Sorts children recursively: directories first, then files, alphabetically (case-insensitive).
+
+SIG: pub fn new()-> Self
+DOC:  Creates a new empty project manager.   # Returns  A new `ProjectManager` instance.
+
+SIG: pub fn open_file(& mut self , path : & Path)-> anyhow :: Result < TextEdit >
+DOC:  Opens a file and returns its content as a `TextEdit`.   # Arguments  * `path` - The file path to open.   # Returns  A `TextEdit` containing the file content, or an error.
+
+SIG: pub fn open_file_lossy(& mut self , path : & Path)-> anyhow :: Result < TextEdit >
+DOC:  Opens a file lossily (replaces invalid UTF‑8 sequences).   # Arguments  * `path` - The file path to open.   # Returns  A `TextEdit` containing the file content (lossy conversion), or an error.
+
+SIG: pub fn save_file(& mut self , t : & TextEdit)-> anyhow :: Result < () >
+DOC:  Saves the current document to the currently open file.   # Arguments  * `t` - The `TextEdit` to save.   # Returns  `Ok(())` on success, or an error if no file is open.
+
+SIG: pub fn save_file_as(& mut self , t : & TextEdit , p : & Path)-> anyhow :: Result < () >
+DOC:  Saves the current document to a specified path (Save As).   # Arguments  * `t` - The `TextEdit` to save.  * `p` - The target path.   # Returns  `Ok(())` on success.
+
+SIG: pub fn mark_dirty(& mut self)
+DOC:  Marks the current document as dirty (unsaved changes).
+
+SIG: pub fn mark_clean(& mut self)
+DOC:  Marks the current document as clean (saved).
+
+SIG: pub fn get_project_tree(& self , root : & Path)-> anyhow :: Result < Vec < FileNode > >
+DOC:  Recursively builds a file tree for the given root directory (no filtering).   # Arguments  * `root` - The root directory path.   # Returns  A vector of top‑level `FileNode`s (the children of the root).
+
+SIG: pub fn git_status(& self , repo_path : & Path)-> anyhow :: Result < GitStatus >
+DOC:  Retrieves Git status for the repository containing `repo_path`.   # Arguments  * `repo_path` - Path to the Git repository root (or any path inside it).   # Returns  A `GitStatus` structure, or an error if not a Git repository.
+
+SIG: pub fn git_commit(& self , repo_path : & Path , message : & str , files : & [& Path] ,)-> anyhow :: Result < () >
+DOC:  Creates a commit with specified files (or all changes if files list is empty).   # Arguments  * `repo_path` - Path to the Git repository.  * `message` - The commit message.  * `files` - A slice of file paths (relative to repository root) to commit.               If empty, stages all changes (equivalent to `git add -A`).   # Returns  `Ok(())` on success.
+
+SIG: pub fn git_diff(& self , repo_path : & Path , file_path : & Path)-> anyhow :: Result < String >
+DOC:  Returns the diff of a specific file (working directory vs index).   # Arguments  * `repo_path` - Path to the Git repository.  * `file_path` - The file path (relative to repository root).   # Returns  A string containing the unified diff.
+
+SIG: pub fn git_diff_all(& self , repo_path : & Path)-> anyhow :: Result < String >
+DOC:  Returns the diff of all changes (working directory vs index).   # Arguments  * `repo_path` - Path to the Git repository.   # Returns  A string containing the unified diff for all changes.
+
+SIG: pub fn is_git_repo(path : & Path)-> bool
+DOC:  Checks whether a path is inside a Git repository (ascends parents).   # Arguments  * `path` - The path to check.   # Returns  `true` if `.git` directory exists in `path` or any parent.
+
+SIG: pub fn find_git_root(path : & Path)-> Option < PathBuf >
+DOC:  Finds the Git repository root for the given path.   # Arguments  * `path` - The path to start from.   # Returns  `Some(PathBuf)` of the repository root, or `None` if not found.
+
+SIG: pub fn ts_language(& self)-> TsLanguage
+DOC:  Returns the corresponding tree‑sitter language object.   # Returns  A `tree_sitter::Language` that can be used in a parser.
+
+SIG: pub fn name(& self)-> & 'static str
+DOC:  Returns the human‑readable language name.   # Returns  A static string slice, e.g. `"rust"`, `"python"`.
+
+SIG: pub fn kind(& self)-> & str
+DOC:  Returns the node's kind (e.g. `"function_item"`).
+
+SIG: pub fn byte_range(& self)-> std :: ops :: Range < usize >
+DOC:  Returns the byte range of this node.
+
+SIG: pub fn start_byte(& self)-> usize
+DOC:  Returns the start byte offset of the node.
+
+SIG: pub fn end_byte(& self)-> usize
+DOC:  Returns the end byte offset of the node.
+
+SIG: pub fn start_position(& self)-> Point
+DOC:  Returns the start position (line, column) of the node.
+
+SIG: pub fn end_position(& self)-> Point
+DOC:  Returns the end position (line, column) of the node.
+
+SIG: pub fn is_error(& self)-> bool
+DOC:  Returns `true` if this node is an error node.
+
+SIG: pub fn is_named(& self)-> bool
+DOC:  Returns `true` if this node is a named node (as opposed to anonymous).
+
+SIG: pub fn child_count(& self)-> usize
+DOC:  Returns the number of direct children.
+
+SIG: pub fn text< 's >(& self , source : & 's str)-> & 's str
+DOC:  Returns the source text covered by this node.   # Arguments  * `source` - The original source string (must be the same one used by the `SyntaxTree`).   # Returns  A string slice containing the node's text.
+
+SIG: pub fn parent(& self)-> Option < SyntaxNode < 'a > >
+DOC:  Returns the parent node, if any.
+
+SIG: pub fn child_by_field_name(& self , name : & str)-> Option < SyntaxNode < 'a > >
+DOC:  Returns the child node with the given field name, if it exists.   # Arguments  * `name` - The field name (e.g. `"name"`, `"value"`).
+
+SIG: pub fn children(& self)-> Vec < SyntaxNode < 'a > >
+DOC:  Returns a vector of all direct children.
+
+SIG: pub fn descendant_for_byte_range(& self , start : usize , end : usize)-> Option < SyntaxNode < 'a > >
+DOC:  Finds the deepest descendant node whose byte range fully overlaps or is contained in `[start, end)`.   # Arguments  * `start` - Start byte offset (inclusive).  * `end` - End byte offset (exclusive).
+
+SIG: pub fn from_node_kind(kind : & str)-> Self
+DOC:  Infers the symbol kind from a tree‑sitter node kind string.   # Arguments  * `kind` - The node kind.   # Returns  A `SymbolKind` variant.
+
+SIG: pub fn new()-> Self
+DOC:  Creates an empty (default) style.
+
+SIG: pub fn fg(mut self , c : u32)-> Self
+DOC:  Sets the foreground colour (RGB packed 0xRRGGBB).   # Arguments  * `c` - The colour value.   # Returns  The style with the colour set.
+
+SIG: pub fn bold(mut self , b : bool)-> Self
+DOC:  Sets the bold attribute.   # Arguments  * `b` - `true` for bold.   # Returns  The style with the bold flag set.
+
+SIG: pub fn italic(mut self , i : bool)-> Self
+DOC:  Sets the italic attribute.   # Arguments  * `i` - `true` for italic.   # Returns  The style with the italic flag set.
+
+SIG: pub fn for_language(language : Language)-> Self
+DOC:  Creates a highlighter for a specific language using default colours (VS Code Dark theme).   # Arguments  * `language` - The programming language.   # Returns  A `Highlighter` instance ready to highlight source code of that language.
+
+SIG: pub fn get_highlights(& self , tree : & Tree , source : & str)-> Vec < (Range , HighlightStyle) >
+DOC:  Returns all highlight ranges for the given tree and source code.   # Arguments  * `tree` - The parsed tree.  * `source` - The original source text.   # Returns  A vector of `(character_range, style)` pairs.
+
+SIG: pub fn new(language : Language , source_text : & str)-> anyhow :: Result < Self >
+DOC:  Creates a new syntax tree by parsing the provided source text.   # Arguments  * `language` - The programming language of the source.  * `source_text` - The source code to parse.   # Returns  A `SyntaxTree` instance or an error if the parser cannot be initialised.
+
+SIG: pub fn update(& mut self , new_source : & str)
+DOC:  Updates the tree after a text change.   # Arguments  * `new_source` - The new source text.
+
+SIG: pub fn get_ast(& self)-> Option < SyntaxNode < '_ > >
+DOC:  Returns the root AST node, if present.   # Returns  An optional `SyntaxNode` referencing the root of the tree.
+
+SIG: pub fn get_node_at_position(& self , char_offset : usize)-> Option < SyntaxNode < '_ > >
+DOC:  Finds the deepest node that contains the given character offset.   # Arguments  * `char_offset` - The character offset (Unicode scalar count).   # Returns  An optional `SyntaxNode` at that position.
+
+SIG: pub fn get_symbols(& self , kind : SymbolKind)-> Vec < Symbol >
+DOC:  Collects all symbols of a specific kind.   # Arguments  * `kind` - The symbol kind to filter.   # Returns  A vector of `Symbol`s.
+
+SIG: pub fn get_all_symbols(& self)-> Vec < Symbol >
+DOC:  Collects all symbols in the tree.   # Returns  A vector of all `Symbol`s found.
+
+SIG: pub fn get_parent_function(& self , char_offset : usize)-> Option < Symbol >
+DOC:  Returns the nearest enclosing function symbol at the given character offset.   # Arguments  * `char_offset` - The character offset.   # Returns  An optional `Symbol` representing the enclosing function.
+
+SIG: pub fn get_highlight_ranges(& self , range : & Range)-> Vec < (Range , HighlightStyle) >
+DOC:  Computes highlight ranges for a given character range.   # Arguments  * `range` - The character range to highlight.   # Returns  A vector of `(character_range, style)` pairs.
+
+SIG: pub fn rename_symbol(& self , char_offset : usize , new_name : & str)-> Option < (Range , String) >
+DOC:  Suggests a rename edit for the symbol at the given character offset.   # Arguments  * `char_offset` - The offset of the symbol or its identifier.  * `new_name` - The new name to use.   # Returns  An optional `(range, new_text)` pair if a renameable symbol is found.
+
+SIG: pub fn source(& self)-> & str
+DOC:  Returns the underlying source text.
+
+SIG: pub fn char_to_byte(& self , char_offset : usize)-> usize
+DOC:  Converts a character offset to a byte offset using the line cache.   # Arguments  * `char_offset` - The character offset (Unicode scalar count).   # Returns  The corresponding byte offset.
+
+SIG: pub fn byte_to_char(& self , byte_offset : usize)-> usize
+DOC:  Converts a byte offset to a character offset using the line cache.   # Arguments  * `byte_offset` - The byte offset.   # Returns  The corresponding character offset (Unicode scalar count).
+
+SIG: pub fn offset_to_position(& self , char_offset : usize)-> (usize , usize)
+DOC:  Converts a character offset to an LSP position (line, UTF‑16 column).   # Arguments  * `char_offset` - The character offset.   # Returns  A tuple `(line, utf16_column)`.
