@@ -16,7 +16,7 @@
 
 use std::fs;
 use std::path::PathBuf;
-use syn::{Attribute, ImplItem, ImplItemFn, Item, ItemFn, Visibility};
+use syn::{Attribute, ImplItem, ImplItemFn, Item, ItemEnum, ItemFn, ItemStruct, Visibility};
 use walkdir::WalkDir;
 
 /// Check whether the visibility is public.
@@ -118,6 +118,34 @@ fn extract_method_sig(m: &ImplItemFn) -> String {
     format!("pub fn {}{}({}){}", ident, gen_str, inputs_str, ret_str)
 }
 
+/// Extract the signature of a struct (up to the first `{`).
+///
+/// # Arguments
+/// * `s` - The struct item.
+///
+/// # Returns
+/// The signature as a string (e.g., `pub struct Range { ... }`).
+fn extract_struct_sig(s: &ItemStruct) -> String {
+    let ident = &s.ident;
+    let generics = &s.generics;
+    let gen_str = quote::quote! { #generics }.to_string();
+    format!("pub struct {}{}", ident, gen_str)
+}
+
+/// Extract the signature of an enum (up to the first `{`).
+///
+/// # Arguments
+/// * `e` - The enum item.
+///
+/// # Returns
+/// The signature as a string (e.g., `pub enum SymbolKind { ... }`).
+fn extract_enum_sig(e: &ItemEnum) -> String {
+    let ident = &e.ident;
+    let generics = &e.generics;
+    let gen_str = quote::quote! { #generics }.to_string();
+    format!("pub enum {}{}", ident, gen_str)
+}
+
 /// Main entry point. Scans all source files and writes the extracted API to the output file.
 fn main() {
     let crate_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -148,6 +176,30 @@ fn main() {
                         output.push(format!("DERIVES: {}", derives));
                     }
                     let doc = extract_doc(&f.attrs);
+                    if !doc.is_empty() {
+                        output.push(format!("DOC: {}", doc));
+                    }
+                    output.push(String::new());
+                }
+                Item::Struct(s) if is_pub(&s.vis) => {
+                    output.push(format!("TYPE: {}", extract_struct_sig(&s)));
+                    let derives = extract_derives(&s.attrs);
+                    if !derives.is_empty() {
+                        output.push(format!("DERIVES: {}", derives));
+                    }
+                    let doc = extract_doc(&s.attrs);
+                    if !doc.is_empty() {
+                        output.push(format!("DOC: {}", doc));
+                    }
+                    output.push(String::new());
+                }
+                Item::Enum(e) if is_pub(&e.vis) => {
+                    output.push(format!("TYPE: {}", extract_enum_sig(&e)));
+                    let derives = extract_derives(&e.attrs);
+                    if !derives.is_empty() {
+                        output.push(format!("DERIVES: {}", derives));
+                    }
+                    let doc = extract_doc(&e.attrs);
                     if !doc.is_empty() {
                         output.push(format!("DOC: {}", doc));
                     }
