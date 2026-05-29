@@ -1,6 +1,18 @@
 // Copyright (C) 2026 xhdlphzr
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+TYPE: pub enum Movement
+DERIVES: #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+DOC:  Movement direction for cursor actions.
+
+TYPE: pub enum CursorMode
+DERIVES: #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+DOC:  The mode of the cursor (not currently used, reserved for future expansion).
+
+TYPE: pub struct Selection
+DERIVES: #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+DOC:  A single selection (or cursor) defined by anchor and active positions.
+
 SIG: pub fn caret(o : usize)-> Self
 DOC:  Creates a collapsed selection (caret) at the given offset.   # Arguments  * `o` - Character offset of the caret.   # Returns  A new `Selection` with both anchor and active set to `o`.
 
@@ -21,6 +33,10 @@ DOC:  Returns the start offset of the normalized range.   # Returns  The smaller
 
 SIG: pub fn end(& self)-> usize
 DOC:  Returns the end offset of the normalized range.   # Returns  The larger of anchor and active.
+
+TYPE: pub struct Cursor
+DERIVES: #[derive(Debug, Clone, Serialize, Deserialize)]
+DOC:  Manages multiple selections and the primary cursor.
 
 SIG: pub fn new()-> Self
 DOC:  Creates a new `Cursor` with a single caret at offset 0.   # Returns  A new `Cursor` instance.
@@ -109,6 +125,10 @@ DOC:  Splits **all** selections into per‑line carets, preserving each selectio
 SIG: pub fn edit_ranges(& self)-> Vec < Range >
 DOC:  Returns a list of normalized ranges for editing, sorted from largest start to smallest.   # Returns  A vector of `Range` suitable for applying edits in reverse order.
 
+TYPE: pub struct Range
+DERIVES: #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+DOC:  Character range (start inclusive, end exclusive).
+
 SIG: pub fn new(start : usize , end : usize)-> Self
 DOC:  Creates a new range with the given start and end positions.   # Arguments  * `start` - Start offset (inclusive).  * `end` - End offset (exclusive).   # Panics  Panics if `start > end` in debug builds.
 
@@ -123,6 +143,14 @@ DOC:  Returns `true` if the range has zero length.   # Returns  `true` when `sta
 
 SIG: pub fn contains(& self , offset : usize)-> bool
 DOC:  Checks whether a character offset lies inside the range.   # Arguments  * `offset` - The character offset to test.   # Returns  `true` if `start <= offset < end`.
+
+TYPE: pub struct StoredCmd
+DERIVES: #[derive(Debug, Clone, Serialize, Deserialize)]
+DOC:  A stored undo/redo command containing the affected range and the changed text.
+
+TYPE: pub struct UndoStack
+DERIVES: #[derive(Debug, Clone, Default)]
+DOC:  Manages the undo/redo stacks using a deque for efficient pop_front.
 
 SIG: pub fn new()-> Self
 DOC:  Creates a new empty undo stack with a maximum of 1000 entries.
@@ -144,6 +172,13 @@ DOC:  Returns `true` if there is an operation that can be undone.
 
 SIG: pub fn can_redo(& self)-> bool
 DOC:  Returns `true` if there is an operation that can be redone.
+
+TYPE: pub enum UndoRedoError
+DERIVES: #[derive(Debug, Error, Clone, PartialEq, Eq, Serialize, Deserialize)]
+DOC:  Errors that can occur when undoing or redoing.
+
+TYPE: pub struct TextEdit
+DOC:  Text buffer wrapping [`PieceTable`] with undo/redo support and line‑start cache.
 
 SIG: pub fn new()-> Self
 DOC:  Creates an empty `TextEdit`.
@@ -199,11 +234,27 @@ DOC:  Returns `true` if an undo operation is possible.
 SIG: pub fn can_redo(& self)-> bool
 DOC:  Returns `true` if a redo operation is possible.
 
+TYPE: pub struct Version
+DERIVES: #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+DOC:  A version identifier with sequence number and timestamp.
+
 SIG: pub fn new(seq : u64)-> Self
 DOC:  Creates a new version with the given sequence number.   # Arguments  * `seq` - The sequence number (monotonically increasing).   # Returns  A `Version` with unique id, current UTC timestamp, and the given sequence.
 
+TYPE: pub enum EditType
+DERIVES: #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+DOC:  Type of edit operation.
+
+TYPE: pub struct EditRecord
+DERIVES: #[derive(Debug, Clone, Serialize, Deserialize)]
+DOC:  A single recorded edit operation.
+
 SIG: pub fn from_parts(et : EditType , range : Range , inserted : & str , deleted : & str , before : Version , after : Version ,)-> Self
 DOC:  Creates a new `EditRecord` from its components.   # Arguments  * `et` - The type of edit.  * `range` - The character range affected.  * `inserted` - The inserted text (if any).  * `deleted` - The deleted text (if any).  * `before` - The version before the edit.  * `after` - The version after the edit.   # Returns  A new `EditRecord` with a unique id and current timestamp.
+
+TYPE: pub struct HistoryTimeline
+DERIVES: #[derive(Debug, Clone, Serialize, Deserialize)]
+DOC:  Manages edit history with compressed snapshots.
 
 SIG: pub fn new()-> Self
 DOC:  Creates a new timeline with default settings (max 10000 records, snapshot every 100 edits).
@@ -246,6 +297,9 @@ DOC:  Restores the editor to the state at a given timestamp.   # Arguments  * `t
 
 SIG: pub fn goto_sequence(& mut self , target_seq : u64 , text : & mut TextEdit)-> anyhow :: Result < bool >
 DOC:  Internal method: restores to a specific sequence number.   # Arguments  * `target_seq` - The target sequence number.  * `text` - The mutable `TextEdit` to modify.   # Returns  `Ok(true)` if the sequence was found and restored, `Ok(false)` otherwise.
+
+TYPE: pub struct Editor
+DOC:  Main editor instance.   **Note**: This type does **not** implement `Serialize`/`Deserialize` because it contains  `LspClient` (process handle) and `SyntaxTree` (tree‑sitter internals) which are not serializable.  For AI integration, use the provided methods directly; do not attempt to serialize the entire editor.   **Thread safety**: Not `Send + Sync`. Wrap in `Arc<RwLock<Editor>>` for multi-threaded use.
 
 SIG: pub fn new()-> Self
 DOC:  Creates a new empty editor.   # Returns  A new `Editor` instance.
@@ -355,8 +409,27 @@ DOC:  Converts a 0‑based character offset to an LSP position (line, UTF‑16 c
 SIG: pub fn position_to_offset(text : & str , line : usize , utf16_col : usize)-> usize
 DOC:  Converts an LSP position (line, UTF‑16 column) to a character offset.   # Arguments  * `text` - The full document text.  * `line` - The 0‑based line number.  * `utf16_col` - The UTF‑16 column offset on that line.   # Returns  The character offset (Unicode scalar count).
 
+TYPE: pub struct LspConfig
+DERIVES: #[derive(Debug, Clone, Serialize, Deserialize)]
+DOC:  Configuration for an LSP server.
+
 SIG: pub fn rust_analyzer(root : & str)-> Self
 DOC:  Creates a configuration for rust-analyzer.   # Arguments  * `root` - The root directory path (will be converted to file URI).   # Returns  A preconfigured `LspConfig` for Rust.
+
+TYPE: pub struct Location
+DERIVES: #[derive(Debug, Clone, Serialize, Deserialize)]
+DOC:  A location in a file (URI + character range).
+
+TYPE: pub struct CompletionItem
+DERIVES: #[derive(Debug, Clone, Serialize, Deserialize)]
+DOC:  A completion item.
+
+TYPE: pub struct HoverInfo
+DERIVES: #[derive(Debug, Clone, Serialize, Deserialize)]
+DOC:  Hover information.
+
+TYPE: pub struct LspClient
+DOC:  Asynchronous LSP client communicating via stdio.   **Note**: This type does **not** implement `Serialize`/`Deserialize` because it contains  a child process handle and internal state that cannot be serialized.
 
 SIG: pub fn start(config : LspConfig)-> anyhow :: Result < Self >
 DOC:  Starts the LSP server process and performs initialisation.   # Arguments  * `config` - The server configuration.   # Returns  A new `LspClient` on success, or an error if the server cannot be launched.
@@ -382,6 +455,10 @@ DOC:  Gets quick fixes for a range.   # Arguments  * `range` - The character ran
 SIG: pub fn shutdown(& self)-> anyhow :: Result < () >
 DOC:  Shuts down the LSP server.   # Returns  `Ok(())` on success, or an error if the shutdown request fails.
 
+TYPE: pub struct FileNode
+DERIVES: #[derive(Debug, Clone, Serialize, Deserialize)]
+DOC:  A node in the file tree (file or directory).
+
 SIG: pub fn dir(name : & str , path : PathBuf)-> Self
 DOC:  Creates a directory node.   # Arguments  * `name` - The directory name.  * `path` - The full filesystem path.   # Returns  A `FileNode` representing a directory.
 
@@ -393,6 +470,18 @@ DOC:  Adds a child node.   # Arguments  * `c` - The child node to add.
 
 SIG: pub fn sort_children(& mut self)
 DOC:  Sorts children recursively: directories first, then files, alphabetically (case-insensitive).
+
+TYPE: pub struct StatusEntry
+DERIVES: #[derive(Debug, Clone, Serialize, Deserialize)]
+DOC:  A Git status entry for a single file.
+
+TYPE: pub struct GitStatus
+DERIVES: #[derive(Debug, Clone, Serialize, Deserialize)]
+DOC:  Git status for a repository.
+
+TYPE: pub struct ProjectManager
+DERIVES: #[derive(Debug, Serialize, Deserialize)]
+DOC:  Manages project state: current file, dirty flag, file operations, Git commands.
 
 SIG: pub fn new()-> Self
 DOC:  Creates a new empty project manager.   # Returns  A new `ProjectManager` instance.
@@ -436,11 +525,19 @@ DOC:  Checks whether a path is inside a Git repository (ascends parents).   # Ar
 SIG: pub fn find_git_root(path : & Path)-> Option < PathBuf >
 DOC:  Finds the Git repository root for the given path.   # Arguments  * `path` - The path to start from.   # Returns  `Some(PathBuf)` of the repository root, or `None` if not found.
 
+TYPE: pub enum Language
+DERIVES: #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+DOC:  Supported programming languages for parsing and syntax highlighting.
+
 SIG: pub fn ts_language(& self)-> TsLanguage
 DOC:  Returns the corresponding tree‑sitter language object.   # Returns  A `tree_sitter::Language` that can be used in a parser.
 
 SIG: pub fn name(& self)-> & 'static str
 DOC:  Returns the human‑readable language name.   # Returns  A static string slice, e.g. `"rust"`, `"python"`.
+
+TYPE: pub struct SyntaxNode< 'a >
+DERIVES: #[derive(Debug, Clone, Copy)]
+DOC:  A reference to an AST node that borrows from a [`SyntaxTree`].   The underlying [`SyntaxTree`] must outlive this reference.
 
 SIG: pub fn kind(& self)-> & str
 DOC:  Returns the node's kind (e.g. `"function_item"`).
@@ -484,8 +581,20 @@ DOC:  Returns a vector of all direct children.
 SIG: pub fn descendant_for_byte_range(& self , start : usize , end : usize)-> Option < SyntaxNode < 'a > >
 DOC:  Finds the deepest descendant node whose byte range fully overlaps or is contained in `[start, end)`.   # Arguments  * `start` - Start byte offset (inclusive).  * `end` - End byte offset (exclusive).
 
+TYPE: pub struct Symbol
+DERIVES: #[derive(Debug, Clone, Serialize, Deserialize)]
+DOC:  A symbol (e.g. function, struct, variable) extracted from the AST.
+
+TYPE: pub enum SymbolKind
+DERIVES: #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+DOC:  Categorisation of a symbol.
+
 SIG: pub fn from_node_kind(kind : & str)-> Self
 DOC:  Infers the symbol kind from a tree‑sitter node kind string.   # Arguments  * `kind` - The node kind.   # Returns  A `SymbolKind` variant.
+
+TYPE: pub struct HighlightStyle
+DERIVES: #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+DOC:  Style information for syntax highlighting.
 
 SIG: pub fn new()-> Self
 DOC:  Creates an empty (default) style.
@@ -499,11 +608,18 @@ DOC:  Sets the bold attribute.   # Arguments  * `b` - `true` for bold.   # Retur
 SIG: pub fn italic(mut self , i : bool)-> Self
 DOC:  Sets the italic attribute.   # Arguments  * `i` - `true` for italic.   # Returns  The style with the italic flag set.
 
+TYPE: pub struct Highlighter
+DERIVES: #[derive(Debug, Clone)]
+DOC:  Highlighter using tree-sitter queries, specialised per language.   **Note**: This type does **not** implement `Serialize`/`Deserialize` because it contains  a tree-sitter query object and internal maps that are not meant to be serialized.
+
 SIG: pub fn for_language(language : Language)-> Self
 DOC:  Creates a highlighter for a specific language using default colours (VS Code Dark theme).   # Arguments  * `language` - The programming language.   # Returns  A `Highlighter` instance ready to highlight source code of that language.
 
 SIG: pub fn get_highlights(& self , tree : & Tree , source : & str)-> Vec < (Range , HighlightStyle) >
 DOC:  Returns all highlight ranges for the given tree and source code.   # Arguments  * `tree` - The parsed tree.  * `source` - The original source text.   # Returns  A vector of `(character_range, style)` pairs.
+
+TYPE: pub struct SyntaxTree
+DOC:  A tree‑sitter syntax tree that owns the source text and the parsed tree.   All `SyntaxNode` references produced from this object are tied to its lifetime.   **Note**: This type does **not** implement `Serialize`/`Deserialize` because it contains  a live parser and tree that cannot be meaningfully serialized.
 
 SIG: pub fn new(language : Language , source_text : & str)-> anyhow :: Result < Self >
 DOC:  Creates a new syntax tree by parsing the provided source text.   # Arguments  * `language` - The programming language of the source.  * `source_text` - The source code to parse.   # Returns  A `SyntaxTree` instance or an error if the parser cannot be initialised.
