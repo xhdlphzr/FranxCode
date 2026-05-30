@@ -30,13 +30,13 @@ fn is_pub(vis: &Visibility) -> bool {
     matches!(vis, Visibility::Public(_))
 }
 
-/// Extract doc comments (`///`) from the attributes.
+/// Extract doc comments (`///`) from the attributes, preserving original line breaks.
 ///
 /// # Arguments
 /// * `attrs` - Slice of attributes.
 ///
 /// # Returns
-/// A single string containing all doc comments joined by spaces.
+/// A multi‑line string containing all doc comments, each on its own line.
 fn extract_doc(attrs: &[Attribute]) -> String {
     let mut docs = Vec::new();
     for attr in attrs {
@@ -50,7 +50,7 @@ fn extract_doc(attrs: &[Attribute]) -> String {
             }
         }
     }
-    docs.join(" ")
+    docs.join("\n")
 }
 
 /// Extract the `#[derive(...)]` attribute as a string.
@@ -177,7 +177,7 @@ fn main() {
                     }
                     let doc = extract_doc(&f.attrs);
                     if !doc.is_empty() {
-                        output.push(format!("DOC: {}", doc));
+                        output.push(format!("DOC:\n{}", doc));
                     }
                     output.push(String::new());
                 }
@@ -189,7 +189,7 @@ fn main() {
                     }
                     let doc = extract_doc(&s.attrs);
                     if !doc.is_empty() {
-                        output.push(format!("DOC: {}", doc));
+                        output.push(format!("DOC:\n{}", doc));
                     }
                     output.push(String::new());
                 }
@@ -201,7 +201,7 @@ fn main() {
                     }
                     let doc = extract_doc(&e.attrs);
                     if !doc.is_empty() {
-                        output.push(format!("DOC: {}", doc));
+                        output.push(format!("DOC:\n{}", doc));
                     }
                     output.push(String::new());
                 }
@@ -216,7 +216,7 @@ fn main() {
                                 }
                                 let doc = extract_doc(&m.attrs);
                                 if !doc.is_empty() {
-                                    output.push(format!("DOC: {}", doc));
+                                    output.push(format!("DOC:\n{}", doc));
                                 }
                                 output.push(String::new());
                             }
