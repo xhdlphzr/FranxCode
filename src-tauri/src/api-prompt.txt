@@ -1,17 +1,17 @@
 // Copyright (C) 2026 xhdlphzr
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-TYPE: pub enum Movement
+TYPE: # [doc = " Movement direction for cursor actions."] # [derive (Debug , Clone , Copy , PartialEq , Eq , Serialize , Deserialize)] pub enum Movement { Up , Down , Left , Right , WordLeft , WordRight , LineStart , LineEnd , FileStart , FileEnd , }
 DERIVES: #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 DOC:
  Movement direction for cursor actions.
 
-TYPE: pub enum CursorMode
+TYPE: # [doc = " The mode of the cursor (not currently used, reserved for future expansion)."] # [derive (Debug , Clone , Copy , PartialEq , Eq , Serialize , Deserialize)] pub enum CursorMode { Insert , Select , }
 DERIVES: #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 DOC:
  The mode of the cursor (not currently used, reserved for future expansion).
 
-TYPE: pub struct Selection
+TYPE: # [doc = " A single selection (or cursor) defined by anchor and active positions."] # [derive (Debug , Clone , Copy , PartialEq , Eq , Serialize , Deserialize)] pub struct Selection { pub anchor : usize , pub active : usize , pub preferred_x : Option < usize > , }
 DERIVES: #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 DOC:
  A single selection (or cursor) defined by anchor and active positions.
@@ -72,7 +72,7 @@ DOC:
  # Returns
  The larger of anchor and active.
 
-TYPE: pub struct Cursor
+TYPE: # [doc = " Manages multiple selections and the primary cursor."] # [derive (Debug , Clone , Serialize , Deserialize)] pub struct Cursor { selections : Vec < Selection > , primary_index : usize , }
 DERIVES: #[derive(Debug, Clone, Serialize, Deserialize)]
 DOC:
  Manages multiple selections and the primary cursor.
@@ -295,7 +295,7 @@ DOC:
  # Returns
  A vector of `Range` suitable for applying edits in reverse order.
 
-TYPE: pub struct Range
+TYPE: # [doc = " Character range (start inclusive, end exclusive)."] # [derive (Debug , Clone , Copy , PartialEq , Eq , Hash , Serialize , Deserialize)] pub struct Range { pub start : usize , pub end : usize , }
 DERIVES: #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 DOC:
  Character range (start inclusive, end exclusive).
@@ -345,12 +345,12 @@ DOC:
  # Returns
  `true` if `start <= offset < end`.
 
-TYPE: pub struct StoredCmd
+TYPE: # [doc = " A stored undo/redo command containing the affected range and the changed text."] # [derive (Debug , Clone , Serialize , Deserialize)] pub struct StoredCmd { pub range : Range , pub inserted : String , pub deleted : String , }
 DERIVES: #[derive(Debug, Clone, Serialize, Deserialize)]
 DOC:
  A stored undo/redo command containing the affected range and the changed text.
 
-TYPE: pub struct UndoStack
+TYPE: # [doc = " Manages the undo/redo stacks using a deque for efficient pop_front."] # [derive (Debug , Clone , Default)] pub struct UndoStack { undo : VecDeque < StoredCmd > , redo : VecDeque < StoredCmd > , max : usize , }
 DERIVES: #[derive(Debug, Clone, Default)]
 DOC:
  Manages the undo/redo stacks using a deque for efficient pop_front.
@@ -397,12 +397,12 @@ SIG: pub fn can_redo(& self)-> bool
 DOC:
  Returns `true` if there is an operation that can be redone.
 
-TYPE: pub enum UndoRedoError
+TYPE: # [doc = " Errors that can occur when undoing or redoing."] # [derive (Debug , Error , Clone , PartialEq , Eq , Serialize , Deserialize)] pub enum UndoRedoError { # [doc = " No operation to undo."] # [error ("Nothing to undo")] NothingToUndo , # [doc = " No operation to redo."] # [error ("Nothing to redo")] NothingToRedo , }
 DERIVES: #[derive(Debug, Error, Clone, PartialEq, Eq, Serialize, Deserialize)]
 DOC:
  Errors that can occur when undoing or redoing.
 
-TYPE: pub struct TextEdit
+TYPE: # [doc = " Text buffer wrapping [`PieceTable`] with undo/redo support and line‑start cache."] pub struct TextEdit { table : PieceTable , undo_stack : UndoStack , line_starts : Vec < usize > , }
 DOC:
  Text buffer wrapping [`PieceTable`] with undo/redo support and line‑start cache.
 
@@ -534,7 +534,7 @@ SIG: pub fn can_redo(& self)-> bool
 DOC:
  Returns `true` if a redo operation is possible.
 
-TYPE: pub struct Version
+TYPE: # [doc = " A version identifier with sequence number and timestamp."] # [derive (Debug , Clone , PartialEq , Eq , Hash , Serialize , Deserialize)] pub struct Version { pub id : String , pub timestamp : DateTime < Utc > , pub sequence : u64 , }
 DERIVES: #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 DOC:
  A version identifier with sequence number and timestamp.
@@ -549,12 +549,12 @@ DOC:
  # Returns
  A `Version` with unique id, current UTC timestamp, and the given sequence.
 
-TYPE: pub enum EditType
+TYPE: # [doc = " Type of edit operation."] # [derive (Debug , Clone , Copy , PartialEq , Eq , Serialize , Deserialize)] pub enum EditType { Insert , Delete , Replace , Undo , Redo , }
 DERIVES: #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 DOC:
  Type of edit operation.
 
-TYPE: pub struct EditRecord
+TYPE: # [doc = " A single recorded edit operation."] # [derive (Debug , Clone , Serialize , Deserialize)] pub struct EditRecord { pub id : String , pub edit_type : EditType , pub range : Range , pub inserted_text : String , pub deleted_text : String , pub timestamp : DateTime < Utc > , pub version_before : Version , pub version_after : Version , }
 DERIVES: #[derive(Debug, Clone, Serialize, Deserialize)]
 DOC:
  A single recorded edit operation.
@@ -574,7 +574,7 @@ DOC:
  # Returns
  A new `EditRecord` with a unique id and current timestamp.
 
-TYPE: pub struct HistoryTimeline
+TYPE: # [doc = " Manages edit history with compressed snapshots."] # [derive (Debug , Clone , Serialize , Deserialize)] pub struct HistoryTimeline { records : VecDeque < EditRecord > , snapshots : VecDeque < (Version , Vec < u8 >) > , current_version : Version , next_sequence : u64 , max_records : usize , snapshot_interval : usize , edits_since_snapshot : usize , }
 DERIVES: #[derive(Debug, Clone, Serialize, Deserialize)]
 DOC:
  Manages edit history with compressed snapshots.
@@ -692,7 +692,7 @@ DOC:
  # Returns
  `Ok(true)` if the sequence was found and restored, `Ok(false)` otherwise.
 
-TYPE: pub struct Editor
+TYPE: # [doc = " Main editor instance."] # [doc = ""] # [doc = " **Note**: This type does **not** implement `Serialize`/`Deserialize` because it contains"] # [doc = " `LspClient` (process handle) and `SyntaxTree` (tree‑sitter internals) which are not serializable."] # [doc = " For AI integration, use the provided methods directly; do not attempt to serialize the entire editor."] # [doc = ""] # [doc = " **Thread safety**: Not `Send + Sync`. Wrap in `Arc<RwLock<Editor>>` for multi-threaded use."] pub struct Editor { pub state : TextEdit , pub cursors : Cursor , pub syntax : Option < SyntaxTree > , pub lsp : Option < LspClient > , pub timeline : HistoryTimeline , pub project : ProjectManager , }
 DOC:
  Main editor instance.
 
@@ -960,7 +960,7 @@ DOC:
  # Returns
  The character offset (Unicode scalar count).
 
-TYPE: pub struct LspConfig
+TYPE: # [doc = " Configuration for an LSP server."] # [derive (Debug , Clone , Serialize , Deserialize)] pub struct LspConfig { pub command : String , pub args : Vec < String > , pub root_uri : String , pub language_id : String , }
 DERIVES: #[derive(Debug, Clone, Serialize, Deserialize)]
 DOC:
  Configuration for an LSP server.
@@ -975,22 +975,22 @@ DOC:
  # Returns
  A preconfigured `LspConfig` for Rust.
 
-TYPE: pub struct Location
+TYPE: # [doc = " A location in a file (URI + character range)."] # [derive (Debug , Clone , Serialize , Deserialize)] pub struct Location { pub uri : String , pub range : Range , }
 DERIVES: #[derive(Debug, Clone, Serialize, Deserialize)]
 DOC:
  A location in a file (URI + character range).
 
-TYPE: pub struct CompletionItem
+TYPE: # [doc = " A completion item."] # [derive (Debug , Clone , Serialize , Deserialize)] pub struct CompletionItem { pub label : String , pub kind : Option < String > , pub detail : Option < String > , pub insert_text : Option < String > , pub additional_edits : Vec < (Range , String) > , }
 DERIVES: #[derive(Debug, Clone, Serialize, Deserialize)]
 DOC:
  A completion item.
 
-TYPE: pub struct HoverInfo
+TYPE: # [doc = " Hover information."] # [derive (Debug , Clone , Serialize , Deserialize)] pub struct HoverInfo { pub contents : String , pub range : Option < Range > , }
 DERIVES: #[derive(Debug, Clone, Serialize, Deserialize)]
 DOC:
  Hover information.
 
-TYPE: pub struct LspClient
+TYPE: # [doc = " Asynchronous LSP client communicating via stdio."] # [doc = ""] # [doc = " **Note**: This type does **not** implement `Serialize`/`Deserialize` because it contains"] # [doc = " a child process handle and internal state that cannot be serialized."] pub struct LspClient { process : Mutex < Child > , next_id : AtomicU64 , # [allow (dead_code)] config : LspConfig , }
 DOC:
  Asynchronous LSP client communicating via stdio.
 
@@ -1086,7 +1086,7 @@ DOC:
  # Returns
  `Ok(())` on success, or an error if the shutdown request fails.
 
-TYPE: pub struct FileNode
+TYPE: # [doc = " A node in the file tree (file or directory)."] # [derive (Debug , Clone , Serialize , Deserialize)] pub struct FileNode { pub name : String , pub path : PathBuf , pub is_dir : bool , pub children : Vec < FileNode > , pub size : Option < u64 > , pub extension : Option < String > , }
 DERIVES: #[derive(Debug, Clone, Serialize, Deserialize)]
 DOC:
  A node in the file tree (file or directory).
@@ -1124,17 +1124,17 @@ SIG: pub fn sort_children(& mut self)
 DOC:
  Sorts children recursively: directories first, then files, alphabetically (case-insensitive).
 
-TYPE: pub struct StatusEntry
+TYPE: # [doc = " A Git status entry for a single file."] # [derive (Debug , Clone , Serialize , Deserialize)] pub struct StatusEntry { pub path : String , pub status : String , pub old_path : Option < String > , }
 DERIVES: #[derive(Debug, Clone, Serialize, Deserialize)]
 DOC:
  A Git status entry for a single file.
 
-TYPE: pub struct GitStatus
+TYPE: # [doc = " Git status for a repository."] # [derive (Debug , Clone , Serialize , Deserialize)] pub struct GitStatus { pub branch : String , pub entries : Vec < StatusEntry > , pub is_clean : bool , }
 DERIVES: #[derive(Debug, Clone, Serialize, Deserialize)]
 DOC:
  Git status for a repository.
 
-TYPE: pub struct ProjectManager
+TYPE: # [doc = " Manages project state: current file, dirty flag, file operations, Git commands."] # [derive (Debug , Serialize , Deserialize)] pub struct ProjectManager { pub current_file : Option < PathBuf > , pub is_dirty : bool , }
 DERIVES: #[derive(Debug, Serialize, Deserialize)]
 DOC:
  Manages project state: current file, dirty flag, file operations, Git commands.
@@ -1269,7 +1269,7 @@ DOC:
  # Returns
  `Some(PathBuf)` of the repository root, or `None` if not found.
 
-TYPE: pub enum Language
+TYPE: # [doc = " Supported programming languages for parsing and syntax highlighting."] # [derive (Debug , Clone , Copy , PartialEq , Eq , Hash , Serialize , Deserialize)] pub enum Language { Rust , C , Cpp , Go , Html , Css , JavaScript , TypeScript , Python , }
 DERIVES: #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 DOC:
  Supported programming languages for parsing and syntax highlighting.
@@ -1288,7 +1288,7 @@ DOC:
  # Returns
  A static string slice, e.g. `"rust"`, `"python"`.
 
-TYPE: pub struct SyntaxNode< 'a >
+TYPE: # [doc = " A reference to an AST node that borrows from a [`SyntaxTree`]."] # [doc = ""] # [doc = " The underlying [`SyntaxTree`] must outlive this reference."] # [derive (Debug , Clone , Copy)] pub struct SyntaxNode < 'a > { pub inner : Node < 'a > , }
 DERIVES: #[derive(Debug, Clone, Copy)]
 DOC:
  A reference to an AST node that borrows from a [`SyntaxTree`].
@@ -1364,12 +1364,12 @@ DOC:
  * `start` - Start byte offset (inclusive).
  * `end` - End byte offset (exclusive).
 
-TYPE: pub struct Symbol
+TYPE: # [doc = " A symbol (e.g. function, struct, variable) extracted from the AST."] # [derive (Debug , Clone , Serialize , Deserialize)] pub struct Symbol { pub name : String , pub kind : SymbolKind , pub byte_range : std :: ops :: Range < usize > , pub line : usize , pub column : usize , }
 DERIVES: #[derive(Debug, Clone, Serialize, Deserialize)]
 DOC:
  A symbol (e.g. function, struct, variable) extracted from the AST.
 
-TYPE: pub enum SymbolKind
+TYPE: # [doc = " Categorisation of a symbol."] # [derive (Debug , Clone , Copy , PartialEq , Eq , Hash , Serialize , Deserialize)] pub enum SymbolKind { Function , Struct , Enum , Trait , Impl , Module , TypeAlias , Const , Static , Variable , Macro , Unknown , }
 DERIVES: #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 DOC:
  Categorisation of a symbol.
@@ -1384,7 +1384,7 @@ DOC:
  # Returns
  A `SymbolKind` variant.
 
-TYPE: pub struct HighlightStyle
+TYPE: # [doc = " Style information for syntax highlighting."] # [derive (Debug , Clone , Copy , PartialEq , Eq , Serialize , Deserialize)] pub struct HighlightStyle { pub fg : Option < u32 > , pub bold : bool , pub italic : bool , }
 DERIVES: #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 DOC:
  Style information for syntax highlighting.
@@ -1423,7 +1423,7 @@ DOC:
  # Returns
  The style with the italic flag set.
 
-TYPE: pub struct Highlighter
+TYPE: # [doc = " Highlighter using tree-sitter queries, specialised per language."] # [doc = ""] # [doc = " **Note**: This type does **not** implement `Serialize`/`Deserialize` because it contains"] # [doc = " a tree-sitter query object and internal maps that are not meant to be serialized."] # [derive (Debug , Clone)] pub struct Highlighter { query : Rc < Query > , capture_to_style : HashMap < String , HighlightStyle > , }
 DERIVES: #[derive(Debug, Clone)]
 DOC:
  Highlighter using tree-sitter queries, specialised per language.
@@ -1452,7 +1452,7 @@ DOC:
  # Returns
  A vector of `(character_range, style)` pairs.
 
-TYPE: pub struct SyntaxTree
+TYPE: # [doc = " A tree‑sitter syntax tree that owns the source text and the parsed tree."] # [doc = ""] # [doc = " All `SyntaxNode` references produced from this object are tied to its lifetime."] # [doc = ""] # [doc = " **Note**: This type does **not** implement `Serialize`/`Deserialize` because it contains"] # [doc = " a live parser and tree that cannot be meaningfully serialized."] pub struct SyntaxTree { # [allow (dead_code)] language : Language , parser : Parser , tree : Option < Tree > , highlighter : Highlighter , source : String , line_starts : Vec < usize > , }
 DOC:
  A tree‑sitter syntax tree that owns the source text and the parsed tree.
 

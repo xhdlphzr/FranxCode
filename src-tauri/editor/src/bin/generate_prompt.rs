@@ -118,32 +118,29 @@ fn extract_method_sig(m: &ImplItemFn) -> String {
     format!("pub fn {}{}({}){}", ident, gen_str, inputs_str, ret_str)
 }
 
-/// Extract the signature of a struct (up to the first `{`).
+/// Extract the full definition of a struct as a single line.
 ///
 /// # Arguments
 /// * `s` - The struct item.
 ///
 /// # Returns
-/// The signature as a string (e.g., `pub struct Range { ... }`).
-fn extract_struct_sig(s: &ItemStruct) -> String {
-    let ident = &s.ident;
-    let generics = &s.generics;
-    let gen_str = quote::quote! { #generics }.to_string();
-    format!("pub struct {}{}", ident, gen_str)
+/// The complete struct definition, compressed to a single line.
+fn extract_struct_full(s: &ItemStruct) -> String {
+    let code = quote::quote! { #s }.to_string();
+    // Collapse whitespace into single spaces
+    code.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
-/// Extract the signature of an enum (up to the first `{`).
+/// Extract the full definition of an enum as a single line.
 ///
 /// # Arguments
 /// * `e` - The enum item.
 ///
 /// # Returns
-/// The signature as a string (e.g., `pub enum SymbolKind { ... }`).
-fn extract_enum_sig(e: &ItemEnum) -> String {
-    let ident = &e.ident;
-    let generics = &e.generics;
-    let gen_str = quote::quote! { #generics }.to_string();
-    format!("pub enum {}{}", ident, gen_str)
+/// The complete enum definition, compressed to a single line.
+fn extract_enum_full(e: &ItemEnum) -> String {
+    let code = quote::quote! { #e }.to_string();
+    code.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
 /// Main entry point. Scans all source files and writes the extracted API to the output file.
@@ -182,7 +179,7 @@ fn main() {
                     output.push(String::new());
                 }
                 Item::Struct(s) if is_pub(&s.vis) => {
-                    output.push(format!("TYPE: {}", extract_struct_sig(&s)));
+                    output.push(format!("TYPE: {}", extract_struct_full(&s)));
                     let derives = extract_derives(&s.attrs);
                     if !derives.is_empty() {
                         output.push(format!("DERIVES: {}", derives));
@@ -194,7 +191,7 @@ fn main() {
                     output.push(String::new());
                 }
                 Item::Enum(e) if is_pub(&e.vis) => {
-                    output.push(format!("TYPE: {}", extract_enum_sig(&e)));
+                    output.push(format!("TYPE: {}", extract_enum_full(&e)));
                     let derives = extract_derives(&e.attrs);
                     if !derives.is_empty() {
                         output.push(format!("DERIVES: {}", derives));
